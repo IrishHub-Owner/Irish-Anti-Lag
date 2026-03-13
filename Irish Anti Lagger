@@ -1,0 +1,282 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local Lighting = game:GetService("Lighting")
+local TouchEnabled = UserInputService.TouchEnabled
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local CONFIG = {
+    GUI_POSITION = {X = 0.1, Y = 0.3}
+}
+
+local function LoadConfig()
+    local success, data = pcall(function()
+        return HttpService:JSONDecode(readfile("IrishHub_AntiLag_Config.json"))
+    end)
+    if success and data then
+        CONFIG = data
+    end
+end
+
+local function SaveConfig()
+    pcall(function()
+        writefile("IrishHub_AntiLag_Config.json", HttpService:JSONEncode(CONFIG))
+    end)
+end
+
+LoadConfig()
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "IrishHub_AntiLag"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = CoreGui:FindFirstChild("RobloxGui") or CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 200, 0, 120)
+MainFrame.Position = UDim2.new(CONFIG.GUI_POSITION.X, 0, CONFIG.GUI_POSITION.Y, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 40, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Active = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
+
+local UIGradient = Instance.new("UIGradient")
+UIGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 100, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 100))
+}
+UIGradient.Rotation = 45
+UIGradient.Parent = MainFrame
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Thickness = 3
+UIStroke.Color = Color3.fromRGB(0, 255, 0)
+UIStroke.Transparency = 0.3
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+UIStroke.Parent = MainFrame
+
+local GlowStroke = Instance.new("UIStroke")
+GlowStroke.Thickness = 6
+GlowStroke.Color = Color3.fromRGB(0, 255, 0)
+GlowStroke.Transparency = 0.7
+GlowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+GlowStroke.Parent = MainFrame
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 30)
+TitleLabel.Position = UDim2.new(0, 0, 0, 5)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Irish Hub's Anti Lag"
+TitleLabel.Font = Enum.Font.GothamBlack
+TitleLabel.TextSize = 14
+TitleLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+TitleLabel.Parent = MainFrame
+
+local UltraButton = Instance.new("TextButton")
+UltraButton.Size = UDim2.new(0.9, 0, 0, 30)
+UltraButton.Position = UDim2.new(0.05, 0, 0, 40)
+UltraButton.BackgroundColor3 = Color3.fromRGB(0, 60, 30)
+UltraButton.Text = "ULTRA ANTI-LAG"
+UltraButton.Font = Enum.Font.GothamBold
+UltraButton.TextSize = 11
+UltraButton.TextColor3 = Color3.fromRGB(0, 255, 100)
+UltraButton.AutoButtonColor = false
+UltraButton.Parent = MainFrame
+
+local UltraCorner = Instance.new("UICorner")
+UltraCorner.CornerRadius = UDim.new(0, 6)
+UltraCorner.Parent = UltraButton
+
+local UltraStroke = Instance.new("UIStroke")
+UltraStroke.Thickness = 1
+UltraStroke.Color = Color3.fromRGB(0, 255, 0)
+UltraStroke.Transparency = 0.5
+UltraStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+UltraStroke.Parent = UltraButton
+
+local FPSButton = Instance.new("TextButton")
+FPSButton.Size = UDim2.new(0.9, 0, 0, 30)
+FPSButton.Position = UDim2.new(0.05, 0, 0, 78)
+FPSButton.BackgroundColor3 = Color3.fromRGB(0, 60, 30)
+FPSButton.Text = "FPS BOOSTER"
+FPSButton.Font = Enum.Font.GothamBold
+FPSButton.TextSize = 11
+FPSButton.TextColor3 = Color3.fromRGB(0, 255, 100)
+FPSButton.AutoButtonColor = false
+FPSButton.Parent = MainFrame
+
+local FPSCorner = Instance.new("UICorner")
+FPSCorner.CornerRadius = UDim.new(0, 6)
+FPSCorner.Parent = FPSButton
+
+local FPSStroke = Instance.new("UIStroke")
+FPSStroke.Thickness = 1
+FPSStroke.Color = Color3.fromRGB(0, 255, 0)
+FPSStroke.Transparency = 0.5
+FPSStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+FPSStroke.Parent = FPSButton
+
+local GreenTint = Instance.new("ColorCorrectionEffect")
+GreenTint.Enabled = false
+GreenTint.TintColor = Color3.fromRGB(180, 255, 180)
+GreenTint.Contrast = 0.1
+GreenTint.Saturation = 0.2
+GreenTint.Parent = Camera
+
+local dragging = false
+local mousePos = nil
+local framePos = nil
+local touchId = nil
+
+local function ClampPosition(position)
+    local screenSize = Camera.ViewportSize
+    local frameSize = MainFrame.AbsoluteSize
+    local minX = -frameSize.X * 0.5
+    local maxX = screenSize.X - frameSize.X * 0.5
+    local minY = 0
+    local maxY = screenSize.Y - frameSize.Y
+    local newX = math.clamp(position.X.Offset, minX, maxX)
+    local newY = math.clamp(position.Y.Offset, minY, maxY)
+    return UDim2.new(0, newX, 0, newY)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or (TouchEnabled and input.UserInputType == Enum.UserInputType.Touch) then
+        dragging = true
+        mousePos = input.Position
+        framePos = MainFrame.Position
+        if TouchEnabled and input.UserInputType == Enum.UserInputType.Touch then
+            touchId = input.KeyCode
+        end
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging then
+        if (input.UserInputType == Enum.UserInputType.MouseMovement) or (TouchEnabled and input.UserInputType == Enum.UserInputType.Touch and input.KeyCode == touchId) then
+            local delta = input.Position - mousePos
+            local newPos = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+            MainFrame.Position = ClampPosition(newPos)
+        end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if (input.UserInputType == Enum.UserInputType.MouseButton1) or (TouchEnabled and input.UserInputType == Enum.UserInputType.Touch and input.KeyCode == touchId) then
+        dragging = false
+        touchId = nil
+        CONFIG.GUI_POSITION = {X = MainFrame.Position.X.Scale, Y = MainFrame.Position.Y.Scale}
+        SaveConfig()
+    end
+end)
+
+task.spawn(function()
+    while task.wait(5) do
+        if not dragging then
+            CONFIG.GUI_POSITION = {X = MainFrame.Position.X.Scale, Y = MainFrame.Position.Y.Scale}
+            SaveConfig()
+        end
+    end
+end)
+
+local function DestroyAllEffects()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("ParticleEmitter") or obj:IsA("Beam") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Explosion") then
+                obj.Enabled = false
+                obj:Destroy()
+            end
+        end)
+    end
+end
+
+local function DestroyAnimations()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("Animation") or obj:IsA("Animator") or obj:IsA("AnimationController") then
+                obj:Destroy()
+            end
+        end)
+    end
+    if LocalPlayer.Character then
+        for _, obj in ipairs(LocalPlayer.Character:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("Animation") or obj:IsA("Animator") or obj:IsA("AnimationController") then
+                    obj:Destroy()
+                end
+            end)
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.8)
+        DestroyAnimations()
+    end
+end)
+
+local function OptimizeLighting()
+    Lighting.Brightness = 2
+    Lighting.ClockTime = 12
+    Lighting.FogEnd = 1000
+    Lighting.GlobalShadows = false
+    Lighting.Outlines = false
+end
+
+UltraButton.MouseButton1Click:Connect(function()
+    UltraButton.Text = "OPTIMIZING..."
+    UltraButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    task.spawn(function()
+        DestroyAllEffects()
+        DestroyAnimations()
+        OptimizeLighting()
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        settings().Rendering.Shadows = false
+        Camera.FieldOfView = 90
+        for _, effect in ipairs(Camera:GetChildren()) do
+            if effect:IsA("BloomEffect") or effect:IsA("DepthOfField") or effect:IsA("ColorCorrectionEffect") then
+                effect.Enabled = false
+            end
+        end
+        UltraButton.Text = "OPTIMIZED"
+        task.wait(2)
+        UltraButton.Text = "ULTRA ANTI-LAG"
+        UltraButton.BackgroundColor3 = Color3.fromRGB(0, 60, 30)
+    end)
+end)
+
+FPSButton.MouseButton1Click:Connect(function()
+    FPSButton.Text = "BOOSTING..."
+    FPSButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    task.spawn(function()
+        DestroyAllEffects()
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        settings().Rendering.AntiAliasing = false
+        settings().Rendering.Shadows = false
+        Camera.FieldOfView = 100
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 12
+        Lighting.GlobalShadows = false
+        GreenTint.Enabled = true
+        FPSButton.Text = "FPS MAXED"
+        task.wait(2)
+        FPSButton.Text = "FPS BOOSTER"
+        FPSButton.BackgroundColor3 = Color3.fromRGB(0, 60, 30)
+    end)
+end)
+
+LocalPlayer.CharacterRemoving:Connect(function()
+    SaveConfig()
+    ScreenGui:Destroy()
+end)
